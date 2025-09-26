@@ -1,0 +1,50 @@
+version: '3.8'
+services:
+
+  nginx:
+  container_name: nginx
+  depends_on:
+    - backend
+  build: ./nginx/
+  ports:
+    - 8000:80
+
+  redis:
+    image: redis:7
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
+  backend:
+    build: .
+    command: gunicorn project_name.wsgi:application --bind 0.0.0.0:8000
+    volumes:
+      - .:/code
+    env_file:
+      - .env
+    depends_on:
+      - redis
+    ports:
+      - "8000:8000"
+
+  celery_worker:
+    build: .
+    command: celery -A project_name worker -l info --concurrency=4
+    volumes:
+      - .:/code
+    env_file:
+      - .env
+    depends_on:
+      - backend
+      - redis
+
+  celery_beat:
+    build: .
+    command: celery -A project_name beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    volumes:
+      - .:/code
+    env_file:
+      - .env
+    depends_on:
+      - backend
+      - redis

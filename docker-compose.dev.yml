@@ -1,0 +1,39 @@
+version: '3.8'
+services:
+  redis:
+    image: redis:7
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
+  backend:
+    build: 
+      context: ./amopost/
+      dockerfile: dockerfile.dev
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./amopost:/app
+      - ./amopost/static:/app/static
+    command: >
+      sh -c "python manage.py makemigrations --noinput &&
+             python manage.py migrate --noinput &&
+             python manage.py runserver 0.0.0.0:8000"
+
+  celery_worker:
+    build: ./amopost/
+    command: celery -A core worker -l info --concurrency=4
+    volumes:
+      - ./amopost/:/code
+    depends_on:
+      - backend
+      - redis
+
+  celery_beat:
+    build: ./amopost/
+    command: celery -A core beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    volumes:
+      - ./amopost/:/code
+    depends_on:
+      - backend
+      - redis
