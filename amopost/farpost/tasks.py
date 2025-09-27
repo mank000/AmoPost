@@ -14,7 +14,6 @@ def fetch_notifications(self):
     try:
         answer = api.check_and_fetch_messages()
         if answer:
-
             logger.info("Notifications fetched: %s", answer)
         else:
             logger.warning("fetch_notifications: empty answer")
