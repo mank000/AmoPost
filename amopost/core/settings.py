@@ -19,6 +19,8 @@ ALLOWED_HOSTS = [
     ".ngrok.io",
     ".ngrok-free.app",
     "khedivial-localizable-annita.ngrok-free.dev",
+    "193.164.150.124",
+    '0.0.0.0'
 ]
 
 
@@ -102,10 +104,6 @@ AUTH_PASSWORD_VALIDATORS = [
 
 STATIC_URL = "/static_backend/"
 STATIC_ROOT = "/backend_static/"
-
-STATICFILES_DIRS = [
-    BASE_DIR / "templates",
-]
 
 LANGUAGE_CODE = "ru-RU"
 

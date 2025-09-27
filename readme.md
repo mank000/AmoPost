@@ -6,8 +6,8 @@
 1. Клонирование репозитория
 ```bash
 git clone
-
 ```
+
 2. Сборка и запуск с Docker Compose 
 
 Проект полностью контейнеризирован.
@@ -39,6 +39,7 @@ docker compose up -d
 ```
 docker compose up -d
 ```
+6. Во вкладке "Периодические задачи" можно изменить периодичность выполнения запросов на фарпост.
 
 Есть недочёт, сообщения до включения бота в amocrm не копируются.
 
@@ -55,3 +56,9 @@ kozmin_arti@mail.ru
 At4)UAGyDeGA
 
 https://kozminarti.amocrm.ru/
+
+## Локальное тестирование
+Для локального тестирования необходимо 
+```bash
+sudo docker compose -f docker-compose.dev.yml
+```
