@@ -1,4 +1,5 @@
 version: '3.8'
+
 services:
   nginx:
     depends_on:
@@ -8,6 +9,7 @@ services:
       - "8000:80"
     volumes:
       - static:/staticfiles/
+
   redis:
     image: redis:7
     restart: unless-stopped
@@ -16,27 +18,32 @@ services:
 
   backend:
     image: mank000/amopost_backend
-    ports:
-      - "8000:8000"
+    command: sh -c " gunicorn --bind 0.0.0.0:8000 core.wsgi:application"
     volumes:
-      - ./amopost:/app
-      - ./amopost/static:/app/static
       - static:/backend_static/
 
   celery_worker:
     image: mank000/amopost_backend
-    command: celery -A core worker -l info --concurrency=4
-    volumes:
-      - ./amopost/:/code
+    command: sh -c " celery -A core worker -l info --concurrency=4"
     depends_on:
       - backend
       - redis
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    working_dir: /code
 
   celery_beat:
     image: mank000/amopost_backend
-    command: celery -A core beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
-    volumes:
-      - ./amopost/:/code
+    command: sh -c "celery -A core beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler"
     depends_on:
       - backend
       - redis
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    working_dir: /code
+
+volumes:
+  static:
+
