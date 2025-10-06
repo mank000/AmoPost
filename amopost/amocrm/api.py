@@ -91,52 +91,66 @@ def send_note(note, id):
 
 def catch_message(origin_message, model_message):
     try:
-        if model_message.uuid_conv is not None:
-            model_message.is_sended = True
-            model_message.last_message = origin_message.get("message")[:254]
-            model_message.save()
-            send_note(origin_message.get("message"), model_message.uuid_conv)
-            return 0
+        msg_text = origin_message.get("message") or ""
+        interlocutor = origin_message.get("interlocutor") or ""
+        url = origin_message.get("url") or ""
+
+        if model_message.uuid_conv:
+            model_message.last_message = msg_text[:254]
+            # Здесь мы НЕ трогаем is_sended, он отражает именно отправку
+            model_message.save(update_fields=["last_message"])
+            send_note(msg_text, model_message.uuid_conv)
+
         uuid_id = str(uuid.uuid4())
+        model_message.uuid_conv = uuid_id
+        model_message.last_message = msg_text[:254]
+        model_message.is_sended = False
+        model_message.save(
+            update_fields=["uuid_conv", "last_message", "is_sended"]
+        )
+
         payload = {
             "event_type": "new_message",
             "payload": {
                 "timestamp": int(time.time()),
                 "msec_timestamp": round(time.time() * 1000),
-                "msgid": str(uuid.uuid4()),  # меняется
-                "conversation_id": uuid_id,  # В зависимости от сделки! Не рандом!
+                "msgid": str(uuid.uuid4()),
+                "conversation_id": uuid_id,
                 "sender": {
-                    "id": uuid_id,  # Тоже зависит от сделки по сути рандом
-                    "name": f"{origin_message.get('interlocutor')}",
+                    "id": uuid_id,
+                    "name": f"{interlocutor}",
                 },
                 "message": {
                     "type": "text",
-                    "text": f"Сообщение из Farpost!\nСсылка: {origin_message.get('url')}\nТекст сообщения: {origin_message.get('message')}",
+                    "text": f"Сообщение из Farpost!\nСсылка: {url}\nТекст сообщения: {msg_text}",
                 },
                 "silent": False,
             },
         }
         body_str = json.dumps(payload, separators=(",", ":"))
-        headers = build_amojo_headers(
-            body_str,
-        )
+        headers = build_amojo_headers(body_str)
+
         resp = session.post(
-            URLS[2] + SCOPE_ID, timeout=5, data=body_str, headers=headers
+            URLS[2] + SCOPE_ID,
+            timeout=5,
+            data=body_str,
+            headers=headers,
         )
-        if resp.status_code != 200:
-            logger.critical(
-                f"Статус создания сообщения {resp.status_code} err: {resp.text}"
-            )
-            return None
 
-        data = resp.json()
-        logger.error(uuid_id)
+        if resp.status_code == 200:
+            model_message.is_sended = True
+            model_message.save(update_fields=["is_sended"])
+            return 0
 
-        model_message.uuid_conv = uuid_id
-        model_message.is_sended = True
-        model_message.last_message = origin_message.get("message")[:254]
-        model_message.save()
-        # send_note(origin_message.get("message"), uuid_id)
-    except Exception as e:
-        logger.critical(f"Критическая ошибка в catch_message: {e}")
+        logger.error(
+            "Статус создания сообщения %s err: %s",
+            resp.status_code,
+            resp.text,
+        )
+        # Оставляем запись в БД с is_sended=False для ретрая
+        return None
+
+    except Exception:
+        # Не глотаем стектрейс — так поймаем ошибки БД (например, длина поля)
+        logger.exception("Критическая ошибка в catch_message")
         return None
