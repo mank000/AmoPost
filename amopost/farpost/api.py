@@ -115,12 +115,10 @@ def check_and_fetch_messages():
             this_chat, created = models.LastChatState.objects.get_or_create(
                 id_farpost=message.get("dialogId")
             )
-            logger.info(message)
             if not this_chat.is_sended or (
                 this_chat.last_message[:254] != message.get("message")[:254]
             ):
                 amoapi.catch_message(message, this_chat)
-                logger.info(message)
     else:
         logger.info("Сообщения отсутствуют или пусты")
     return messages
