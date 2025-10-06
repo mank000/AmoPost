@@ -1,5 +1,4 @@
 # views_simple.py
-import json
 import logging
 import urllib.parse
 
@@ -19,23 +18,27 @@ def amocrm_webhook_simple(request):
             body = request.body.decode("utf-8")
             logger.info(body)
 
-            hook_body = json.loads(body)
+            parsed_data = urllib.parse.parse_qs(body)
 
-            message = hook_body.get("message", {}).get("message", {})
-            conversation = hook_body.get("message", {}).get(
-                "conversation", {}
+            # Приводим ключи к читаемому виду
+            simple_data = {}
+            for key, value in parsed_data.items():
+                clean_key = key.replace("%5B", "[").replace("%5D", "]")
+                simple_data[clean_key] = (
+                    value[0] if len(value) == 1 else value
+                )
+
+            # Забираем текст сообщения
+            message_text = simple_data.get(
+                "unsorted[update][0][source_data][data][0][text]"
             )
-            receiver = hook_body.get("message", {}).get("receiver", {})
+            message_chat_id = simple_data.get(
+                "unsorted[update][0][source_data][origin][chat_id]"
+            )
 
-            message_id = message.get("id")
-            message_type = message.get("type")
-            message_text = message.get("text")
-            message_chat_id = conversation.get("client_id")
-            message_amocrm_chat_id = conversation.get("id")
-
-            if message_type == "text" and message_text:
+            if message_text:
                 chat = LastChatState.objects.filter(
-                    id_amocrm=message_amocrm_chat_id
+                    uuid_conv=message_chat_id
                 ).first()
                 if (
                     chat
@@ -56,10 +59,7 @@ def amocrm_webhook_simple(request):
                 )
 
             return JsonResponse(
-                {
-                    "status": "ignored",
-                    "message": "Only text messages are processed",
-                }
+                {"status": "ignored", "message": "No text message found"}
             )
 
         except Exception as e:
