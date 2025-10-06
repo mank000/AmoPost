@@ -20,7 +20,8 @@ ALLOWED_HOSTS = [
     ".ngrok-free.app",
     "khedivial-localizable-annita.ngrok-free.dev",
     "193.164.150.124",
-    '0.0.0.0'
+    "0.0.0.0",
+    "filinlab.ru",
 ]
 
 
