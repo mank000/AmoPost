@@ -20,7 +20,6 @@ def amocrm_webhook_simple(request):
 
             parsed_data = urllib.parse.parse_qs(body)
 
-            # Приводим ключи к читаемому виду
             simple_data = {}
             for key, value in parsed_data.items():
                 clean_key = key.replace("%5B", "[").replace("%5D", "]")
@@ -45,9 +44,10 @@ def amocrm_webhook_simple(request):
                     and message_text[:254] != chat.last_out_message
                     and message_text[:254] != chat.last_message
                 ):
+                    logger.info(message_text, message_chat_id)
                     farapi.send_message_to(chat.id_farpost, message_text)
                     chat.last_out_message = message_text[:254]
-                    chat.save(update_fields=["last_out_message"])
+                    chat.save()
 
                 return JsonResponse(
                     {
@@ -55,11 +55,13 @@ def amocrm_webhook_simple(request):
                         "message": "Text message processed",
                         "chat_id": message_chat_id,
                         "text": message_text,
-                    }
+                    },
+                    status=200,
                 )
 
             return JsonResponse(
-                {"status": "ignored", "message": "No text message found"}
+                {"status": "ignored", "message": "No text message found"},
+                status=200,
             )
 
         except Exception as e:
