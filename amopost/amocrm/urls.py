@@ -4,7 +4,7 @@ from . import views
 
 urlpatterns = [
     path(
-        "msg_webhook/",
+        "webhook/amo/",
         views.amocrm_webhook_simple,
         name="amocrm-webhook",
     ),
