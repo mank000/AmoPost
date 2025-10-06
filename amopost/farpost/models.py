@@ -1,5 +1,6 @@
 from django.db import models
 
+
 class LastChatState(models.Model):
     id_farpost = models.CharField(null=False, blank=False)
     id_amocrm = models.CharField(null=True, blank=True)
@@ -7,6 +8,8 @@ class LastChatState(models.Model):
     is_sended = models.BooleanField(default=False)
     last_message = models.CharField(max_length=256, null=True, blank=True)
     last_out_message = models.CharField(max_length=256, null=True, blank=True)
+    uuid_conv = models.CharField(max_length=512, null=True, blank=True)
+
     class Meta:
         verbose_name = "Состояние последнего чата"
         verbose_name_plural = "Состояние последнего чата"
